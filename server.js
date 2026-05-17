@@ -95,6 +95,22 @@ const server = http.createServer((req, res) => {
         res.end('error');
       }
     });
+  } else if (req.method === 'GET' && req.url === '/photos') {
+    const files = fs.existsSync(SAVE_DIR) ? fs.readdirSync(SAVE_DIR).filter(f => f.endsWith('.png')).sort().reverse() : [];
+    const list = files.map(f => `<a href="/photo/${f}"><img src="/photo/${f}" style="width:200px;margin:5px;border-radius:8px"></a>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>照片</title><style>body{background:#1a1a2e;margin:0;padding:20px;text-align:center}a{display:inline-block}h1{color:#fff;font-family:sans-serif}</style></head><body><h1>共 ${files.length} 张照片</h1>${list || '<p style="color:#aaa">暂无照片</p>'}</body></html>`;
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(html);
+  } else if (req.method === 'GET' && req.url.startsWith('/photo/')) {
+    const filename = decodeURIComponent(req.url.slice(7));
+    const filepath = path.join(SAVE_DIR, filename);
+    if (fs.existsSync(filepath)) {
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(fs.readFileSync(filepath));
+    } else {
+      res.writeHead(404);
+      res.end('not found');
+    }
   } else {
     res.writeHead(404);
     res.end();
