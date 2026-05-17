@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+const PASSWORD = 'jmzp7712';
 const PORT = process.env.PORT || 3000;
 const SAVE_DIR = path.join(__dirname, 'photos');
 if (!fs.existsSync(SAVE_DIR)) fs.mkdirSync(SAVE_DIR);
@@ -113,8 +114,8 @@ const server = http.createServer((req, res) => {
     });
   } else if (req.method === 'GET' && req.url === '/photos') {
     const files = fs.existsSync(SAVE_DIR) ? fs.readdirSync(SAVE_DIR).filter(f => f.endsWith('.png')).sort().reverse() : [];
-    const list = files.map(f => `<a href="/photo/${f}"><img src="/photo/${f}" style="width:200px;margin:5px;border-radius:8px"></a>`).join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>照片</title><style>body{background:#1a1a2e;margin:0;padding:20px;text-align:center}a{display:inline-block}h1{color:#fff;font-family:sans-serif}</style></head><body><h1>共 ${files.length} 张照片</h1>${list || '<p style="color:#aaa">暂无照片</p>'}</body></html>`;
+    const listHtml = files.map(f => `<a href="/photo/${f}"><img src="/photo/${f}" style="width:200px;margin:5px;border-radius:8px"></a>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>照片</title><style>body{background:#1a1a2e;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;font-family:sans-serif}#gate{text-align:center}#gate input{padding:10px;font-size:18px;border:1px solid #555;border-radius:6px;background:#16213e;color:#fff;margin:10px}#gate button{padding:10px 30px;font-size:18px;border:none;border-radius:6px;background:#e94560;color:#fff;cursor:pointer}#photos{display:none;text-align:center;padding:20px}a{display:inline-block}h1{color:#fff;font-family:sans-serif}</style></head><body><div id="gate"><div style="color:#aaa;font-size:20px;margin-bottom:10px">请输入密码</div><input type="password" id="pw" autofocus><br><button onclick="check()">进入</button><div id="err" style="color:#ff6b6b;margin-top:10px;display:none">密码错误</div></div><div id="photos"><h1>共 ${files.length} 张照片</h1>${listHtml || '<p style="color:#aaa">暂无照片</p>'}</div><script>function check(){if(document.getElementById('pw').value==='${PASSWORD}'){document.getElementById('gate').style.display='none';document.getElementById('photos').style.display='block'}else{document.getElementById('err').style.display='block'}}document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')check()})</script></body></html>`;
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
   } else if (req.method === 'GET' && req.url.startsWith('/photo/')) {
