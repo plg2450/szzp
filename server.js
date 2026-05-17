@@ -71,23 +71,29 @@ const server = http.createServer((req, res) => {
     const chunks = [];
     req.on('data', c => chunks.push(c));
     req.on('end', () => {
-      const buf = Buffer.concat(chunks);
-      const boundary = req.headers['content-type'].match(/boundary=(.+)/)[1];
-      const parts = buf.toString('binary').split('--' + boundary);
-      for (const part of parts) {
-        if (part.includes('filename=')) {
-          const headerEnd = part.indexOf('\r\n\r\n') + 4;
-          const rawData = part.substring(headerEnd, part.lastIndexOf('\r\n'));
-          const filename = 'photo_' + Date.now() + '.png';
-          fs.writeFileSync(path.join(SAVE_DIR, filename), rawData, 'binary');
-          console.log('已保存: ' + filename);
-          res.writeHead(200);
-          res.end('ok');
-          return;
-        }
+      try {
+        const buf = Buffer.concat(chunks);
+        const boundary = req.headers['content-type'].match(/boundary=(.+)/)[1];
+        const boundaryBuf = Buffer.from('--' + boundary);
+        const headerEnd = Buffer.from('\r\n\r\n');
+
+        // 找到 boundary 后的 header 结束位置
+        const start = buf.indexOf(boundaryBuf);
+        const bodyStart = buf.indexOf(headerEnd, start) + 4;
+        // 找到下一个 boundary 作为数据结束位置
+        const bodyEnd = buf.indexOf(boundaryBuf, bodyStart) - 2; // 去掉末尾 \r\n
+
+        const imageData = buf.slice(bodyStart, bodyEnd);
+        const filename = 'photo_' + Date.now() + '.png';
+        fs.writeFileSync(path.join(SAVE_DIR, filename), imageData);
+        console.log('已保存: ' + filename);
+        res.writeHead(200);
+        res.end('ok');
+      } catch (err) {
+        console.error('保存失败:', err);
+        res.writeHead(500);
+        res.end('error');
       }
-      res.writeHead(400);
-      res.end();
     });
   } else {
     res.writeHead(404);
